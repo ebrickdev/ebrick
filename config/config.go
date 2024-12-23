@@ -24,6 +24,7 @@ type Config struct {
 	Database      DatabaseConfig
 	Cache         CacheConfig
 	Env           string
+	LogType       string
 	ORM           ORMConfig
 	Oidc          OidcConfig
 	Messaging     MessagingConfig
