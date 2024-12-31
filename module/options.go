@@ -1,19 +1,15 @@
 package module
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/trinitytechnology/ebrick/cache"
-	"github.com/trinitytechnology/ebrick/messaging"
-	"go.uber.org/zap"
-	"gorm.io/gorm"
+	"github.com/ebrickdev/ebrick/cache"
+	"github.com/ebrickdev/ebrick/event"
+	"github.com/ebrickdev/ebrick/logger"
 )
 
 type Options struct {
-	Database    *gorm.DB
-	Cache       cache.Cache
-	EventStream messaging.CloudEventStream
-	Logger      *zap.Logger
-	Router      *gin.Engine
+	Cache    cache.Cache
+	Logger   logger.Logger
+	EventBus event.EventBus
 }
 
 type Option func(*Options)
@@ -28,33 +24,20 @@ func newOptions(opts ...Option) *Options {
 	return opt
 }
 
-// Option functions
-func Database(db *gorm.DB) Option {
-	return func(o *Options) {
-		o.Database = db
-	}
-}
-
-func Cache(c cache.Cache) Option {
+func WithCache(c cache.Cache) Option {
 	return func(o *Options) {
 		o.Cache = c
 	}
 }
 
-func EventStream(es messaging.CloudEventStream) Option {
-	return func(o *Options) {
-		o.EventStream = es
-	}
-}
-
-func Logger(l *zap.Logger) Option {
+func WithLogger(l logger.Logger) Option {
 	return func(o *Options) {
 		o.Logger = l
 	}
 }
 
-func Router(r *gin.Engine) Option {
+func WithEventBus(e event.EventBus) Option {
 	return func(o *Options) {
-		o.Router = r
+		o.EventBus = e
 	}
 }
