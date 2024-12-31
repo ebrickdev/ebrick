@@ -19,7 +19,11 @@ func init() {
 
 // Config represents the application configuration.
 type Config struct {
-	Env string
+	Env    string
+	Server ServerConfig
+}
+type ServerConfig struct {
+	Port string
 }
 
 // LoadConfig loads the configuration from the specified paths.
