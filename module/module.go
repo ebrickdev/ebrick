@@ -1,22 +1,20 @@
 package module
 
-// Module
-const (
-	MODULES_DIR = "modules"
-)
+import "context"
 
-type Initializer interface {
-	Initialize(options *Options) error
-}
-
-type MetaDataProvider interface {
+type Module interface {
 	Id() string
 	Name() string
 	Version() string
 	Description() string
+	Initialize(ctx context.Context, options *Options) error
+	Start(ctx context.Context) error
+	Stop(ctx context.Context) error
+	Dependencies() []string
 }
 
-type Module interface {
-	Initializer
-	MetaDataProvider
+type ModuleConfig struct {
+	Id     string
+	Name   string
+	Enable bool
 }

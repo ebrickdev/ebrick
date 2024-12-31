@@ -2,81 +2,47 @@ package ebrick
 
 import (
 	"context"
-	"time"
 
-	"github.com/trinitytechnology/ebrick/module"
-	"go.uber.org/zap"
+	"github.com/ebrickdev/ebrick/module"
 )
 
-type App interface {
-	GetName() string
-	GetVersion() string
-	Options() *Options
-	RegisterModules(m ...module.Module) error
-	Start() error
+type Application interface {
+	RegisterModules(ctx context.Context, modules ...module.Module) error
+	Start(ctx context.Context) error
+	GetOptions() *Options
 }
 
 type application struct {
-	opts *Options
-	mm   *module.ModuleManager
+	mm      *module.ModuleManager
+	options *Options
 }
 
-// Version implements App.
-func (a *application) GetVersion() string {
-	return a.opts.Version
+// GetOptions implements Application.
+func (a *application) GetOptions() *Options {
+	return a.options
 }
 
-// Name implements App.
-func (a *application) GetName() string {
-	return a.opts.Name
+// RegisterModules implements Application.
+func (a *application) RegisterModules(ctx context.Context, modules ...module.Module) error {
+	return a.mm.RegisterModules(ctx, modules...)
 }
 
-// Options implements App.
-func (a *application) Options() *Options {
-	return a.opts
-}
+func (a *application) Start(ctx context.Context) error {
+	// Start Cores Services
 
-func NewApplication(opts ...Option) App {
-	op := newOptions(opts...)
-
-	mm := module.NewModuleManager(
-		module.Logger(op.Logger),
-		module.Database(op.Database),
-		module.Cache(op.Cache),
-		module.EventStream(op.EventStream),
-		module.Router(op.HttpServer.GetRouter()),
-	)
-
-	return &application{
-		opts: op,
-		mm:   mm,
-	}
-}
-
-// Start implements App.
-func (a *application) Start() error {
-	log := a.opts.Logger
-	defer func() {
-		// Increase timeout for tracer provider shutdown
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-		if err := a.opts.TracerProvider.Shutdown(ctx); err != nil {
-			log.Fatal("failed to shutdown tracer provider", zap.Error(err))
-		}
-	}()
-	a.mm.LoadDynamicModules()
-	err := a.opts.HttpServer.Start()
-
+	// Start all modules
+	err := a.mm.StartAllModules(ctx)
 	return err
 }
 
-// RegisterModule registers a module.
-func (a *application) RegisterModules(m ...module.Module) error {
-	for _, module := range m {
-		err := a.mm.RegisterModule(module)
-		if err != nil {
-			return err
-		}
+func NewApplication(opts ...Option) Application {
+
+	options := newOptions(opts...)
+
+	moduleManager := module.NewModuleManager(module.WithLogger(options.Logger), module.WithCache(options.Cache), module.WithEventBus(options.EventBus))
+
+	return &application{
+		mm:      moduleManager,
+		options: options,
 	}
-	return nil
 }

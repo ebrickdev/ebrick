@@ -3,7 +3,7 @@ package module
 import "errors"
 
 var (
-	ErrInvalidModuleType  = errors.New("invalid plugin type")
-	ErrModulePathNotFound = errors.New("Module path not found")
-	ErrModuleNotFound     = errors.New("Module not found")
+	ErrModulePathNotFound = errors.New("module path not found")
+	ErrModuleNotFound     = errors.New("module not found")
+	ErrInvalidModuleType  = errors.New("invalid module type")
 )

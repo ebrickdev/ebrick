@@ -1,17 +1,4 @@
 # eBrick Framework
-
-## Elastic Architecture Overview
-
-<div style="text-align: center; ">
-  <img style="border-radius: 10px" src="docs/images/elastic-architecture.png" alt="Image description" width="800">
-</div>
-
-Elastic Architecture is a software design approach that emphasizes flexibility, adaptability, and scalability by combining the strengths of modular monolithic, kernel, and microservice architectures. This approach allows the system to easily expand, contract, or transition between different architectural models based on business and technical requirements without significantly affecting its integrity and performance. 
-
-[Elastic Architecture](docs/Elastic-Architecture.md)
-
-## eBrick Framework Overview
-
 **eBrick Framework** – a robust and flexible platform designed for building Elastic Applications which inspired by elastic architecture. The eBrick Framework leverages a brick architecture, seamlessly combining modular components, microservices, and a core kernel to facilitate the development of scalable and adaptable software solutions. Integrating the principles of clean architecture, eBrick ensures each layer of your application remains decoupled and maintainable, allowing for easy modifications, testing, and deployment.
 
 ### Key Feature: Seamless Transition Between Architectures
