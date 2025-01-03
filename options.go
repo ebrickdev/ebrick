@@ -2,6 +2,7 @@ package ebrick
 
 import (
 	"github.com/ebrickdev/ebrick/cache"
+	"github.com/ebrickdev/ebrick/config"
 	"github.com/ebrickdev/ebrick/event"
 	"github.com/ebrickdev/ebrick/logger"
 )
@@ -19,15 +20,18 @@ type Option func(*Options)
 func newOptions(opts ...Option) *Options {
 
 	// Init Options
-	opt := &Options{}
+	opt := &Options{
+		Logger: logger.DefaultLogger,
+	}
 
 	for _, o := range opts {
 		o(opt)
 	}
 
-	// // Logger
 	if opt.Logger == nil {
-		opt.Logger = logger.DefaultLogger
+		cfg := config.GetAppConfig()
+		logger.DefaultLogger = logger.New(logger.NewDefaultLogger(cfg.Env))
+		logger.DefaultLogger.Info("Default logger initiated")
 	}
 
 	// // Init Event Bus
