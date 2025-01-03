@@ -47,3 +47,7 @@ func (g *ginContext) Request() *http.Request {
 func (g *ginContext) ClientIP() string {
 	return g.ctx.ClientIP()
 }
+
+func (g *ginContext) SetHeader(key, value string) {
+	g.ctx.Header(key, value)
+}

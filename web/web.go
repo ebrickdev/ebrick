@@ -15,6 +15,7 @@ type Context interface {
 	Next()
 	Request() *http.Request
 	ClientIP() string
+	SetHeader(key, value string)
 }
 
 // RouterGroup abstracts route grouping
