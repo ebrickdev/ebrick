@@ -7,16 +7,15 @@ import (
 	"sync"
 
 	"github.com/ebrickdev/ebrick/config"
-	"github.com/ebrickdev/ebrick/logger"
 	"github.com/ebrickdev/ebrick/module"
 	"github.com/ebrickdev/ebrick/web"
-	"github.com/ebrickdev/ebrick/web/middleware"
 )
 
 type Application interface {
 	RegisterModules(ctx context.Context, modules ...module.Module) error
 	Start(ctx context.Context) error
-	GetOptions() *Options
+	Options() *Options
+	WebServer() web.Server
 }
 
 type application struct {
@@ -25,8 +24,13 @@ type application struct {
 	options *Options
 }
 
+// Web implements Application.
+func (a *application) WebServer() web.Server {
+	return a.web
+}
+
 // GetOptions implements Application.
-func (a *application) GetOptions() *Options {
+func (a *application) Options() *Options {
 	return a.options
 }
 
@@ -84,7 +88,6 @@ func NewApplication(opts ...Option) Application {
 	webserver := web.NewGinServer(
 		web.WithAddress(fmt.Sprintf(":%s", appCfg.Server.Port)),
 		web.WithMode(webMode),
-		web.WithMiddleware(middleware.LoggerMiddleware(logger.DefaultLogger)),
 	)
 
 	moduleManager := module.NewModuleManager(
