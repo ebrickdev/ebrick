@@ -1,29 +1,33 @@
 package server
 
 import (
-	"context"
+	"google.golang.org/grpc"
 )
 
 type Options struct {
-	// Other options for implementations of the interface
-	// can be stored in a context
-	Context context.Context
+	Address     string
+	Name        string
+	Version     string
+	GRPCOptions GRPCOptions
+}
 
-	// The router for requests
-	Router Router
-
-	Name      string
-	Id        string
-	Version   string
-	Advertise string
-	Address   string
+// GRPCOptions holds gRPC-specific configuration options.
+type GRPCOptions struct {
+	MaxConcurrentStreams uint32
+	Interceptor          grpc.UnaryServerInterceptor
 }
 
 type Option func(*Options)
 
-func NewOptions(opts ...Option) Options {
+func newOptions(opts ...Option) Options {
 	options := Options{
-		Context: context.Background(),
+		Address: DefaultAddress,
+		Name:    DefaultName,
+		Version: DefaultVersion,
+		GRPCOptions: GRPCOptions{
+			MaxConcurrentStreams: 1000, // Default max streams
+			Interceptor:          nil,  // No default interceptor
+		},
 	}
 
 	for _, o := range opts {
@@ -32,16 +36,9 @@ func NewOptions(opts ...Option) Options {
 
 	return options
 }
-
-func WithContext(ctx context.Context) Option {
+func WithAddress(address string) Option {
 	return func(o *Options) {
-		o.Context = ctx
-	}
-}
-
-func WithRouter(router Router) Option {
-	return func(o *Options) {
-		o.Router = router
+		o.Address = address
 	}
 }
 
@@ -51,26 +48,20 @@ func WithName(name string) Option {
 	}
 }
 
-func WithId(id string) Option {
-	return func(o *Options) {
-		o.Id = id
-	}
-}
-
 func WithVersion(version string) Option {
 	return func(o *Options) {
 		o.Version = version
 	}
 }
 
-func WithAdvertise(advertise string) Option {
+func WithMaxConcurrentStreams(maxStreams uint32) Option {
 	return func(o *Options) {
-		o.Advertise = advertise
+		o.GRPCOptions.MaxConcurrentStreams = maxStreams
 	}
 }
 
-func WithAddress(address string) Option {
+func WithInterceptor(interceptor grpc.UnaryServerInterceptor) Option {
 	return func(o *Options) {
-		o.Address = address
+		o.GRPCOptions.Interceptor = interceptor
 	}
 }
