@@ -102,6 +102,7 @@ func (s *ginServer) Use(middleware ...HandlerFunc) {
 func (s *ginServer) Start() error {
 	// Start the server in a goroutine
 	go func() {
+		log.Printf("WEB: Starting WebServer on %s", s.server.Addr)
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Printf("Server error: %v", err)
 		}
