@@ -3,15 +3,7 @@ package logger
 import (
 	"log"
 	"os"
-
-	"github.com/ebrickdev/ebrick/config"
 )
-
-func init() {
-	cfg := config.GetAppConfig()
-	DefaultLogger = New(NewDefaultLogger(cfg.Env))
-	DefaultLogger.Info("Default logger initiated")
-}
 
 // DefaultLogger is a custom logger that mimics LogrusProvider's methods.
 type defaultLogger struct {
