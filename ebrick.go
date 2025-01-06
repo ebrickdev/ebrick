@@ -7,7 +7,9 @@ import (
 	"sync"
 
 	"github.com/ebrickdev/ebrick/config"
+	"github.com/ebrickdev/ebrick/logger"
 	"github.com/ebrickdev/ebrick/module"
+	"github.com/ebrickdev/ebrick/server"
 	"github.com/ebrickdev/ebrick/web"
 )
 
@@ -16,17 +18,24 @@ type Application interface {
 	Start(ctx context.Context) error
 	Options() *Options
 	WebServer() web.Server
+	GrpcServer() server.GRPCServer
 }
 
 type application struct {
 	mm      *module.ModuleManager
-	web     web.Server
+	http    web.Server
+	gprc    server.GRPCServer
 	options *Options
+}
+
+// GrpcServer implements Application.
+func (a *application) GrpcServer() server.GRPCServer {
+	return a.gprc
 }
 
 // Web implements Application.
 func (a *application) WebServer() web.Server {
-	return a.web
+	return a.http
 }
 
 // GetOptions implements Application.
@@ -61,7 +70,18 @@ func (a *application) Start(ctx context.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := a.web.Start(); err != nil {
+		if err := a.http.Start(); err != nil {
+			mu.Lock()
+			combinedErr = errors.Join(combinedErr, err)
+			mu.Unlock()
+		}
+	}()
+
+	// Start Grpc Server
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := a.gprc.Start(); err != nil {
 			mu.Lock()
 			combinedErr = errors.Join(combinedErr, err)
 			mu.Unlock()
@@ -85,10 +105,17 @@ func NewApplication(opts ...Option) Application {
 		webMode = "release"
 	}
 
-	webserver := web.NewGinServer(
+	httpServer := web.NewGinServer(
 		web.WithAddress(fmt.Sprintf(":%s", appCfg.Server.Port)),
 		web.WithMode(webMode),
 	)
+
+	grpcConfig, err := server.GetConfig()
+	if err != nil {
+		options.Logger.Fatal("failed to get grpc server config", logger.Error(err))
+	}
+
+	gprcServer := server.NewGRPCServer(server.WithAddress(grpcConfig.Grpc.Address))
 
 	moduleManager := module.NewModuleManager(
 		module.WithLogger(options.Logger),
@@ -99,6 +126,7 @@ func NewApplication(opts ...Option) Application {
 	return &application{
 		mm:      moduleManager,
 		options: options,
-		web:     webserver,
+		http:    httpServer,
+		gprc:    gprcServer,
 	}
 }
