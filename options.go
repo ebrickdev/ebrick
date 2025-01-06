@@ -18,7 +18,7 @@ type Options struct {
 type Option func(*Options)
 
 func newOptions(opts ...Option) *Options {
-
+	cfg := config.GetAppConfig()
 	// Init Options
 	opt := &Options{
 		Logger: logger.DefaultLogger,
@@ -29,8 +29,8 @@ func newOptions(opts ...Option) *Options {
 	}
 
 	if opt.Logger == nil {
-		cfg := config.GetAppConfig()
 		logger.DefaultLogger = logger.New(logger.NewDefaultLogger(cfg.Env))
+		opt.Logger = logger.DefaultLogger
 		logger.DefaultLogger.Info("Default logger initiated")
 	}
 
