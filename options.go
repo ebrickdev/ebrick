@@ -34,15 +34,14 @@ func newOptions(opts ...Option) *Options {
 		logger.DefaultLogger.Info("Default logger initiated")
 	}
 
-	// // Init Event Bus
-	// if opt.EventBus == nil {
-	// 	// EventBus
-	// 	eventBus, err := inmemory.NewEventBus()
-	// 	if err != nil {
-	// 		opt.Logger.Error("Failed to create event bus")
-	// 	}
-	// 	opt.EventBus = eventBus
-	// }
+	if opt.EventBus == nil {
+		// EventBus
+		eventBus, err := event.NewMemoryEventBus()
+		if err != nil {
+			opt.Logger.Error("Failed to create event bus")
+		}
+		opt.EventBus = eventBus
+	}
 
 	return opt
 }
