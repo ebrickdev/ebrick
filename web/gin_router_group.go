@@ -9,6 +9,11 @@ type ginRouterGroup struct {
 	group *gin.RouterGroup
 }
 
+// Group implements RouterGroup.
+func (g *ginRouterGroup) Group(prefix string) RouterGroup {
+	return &ginRouterGroup{group: g.group.Group(prefix)}
+}
+
 func (g *ginRouterGroup) GET(route string, handler HandlerFunc) {
 	g.group.GET(route, func(c *gin.Context) {
 		handler(NewGinContext(c))

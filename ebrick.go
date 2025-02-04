@@ -13,6 +13,7 @@ import (
 	"github.com/ebrickdev/ebrick/web"
 )
 
+// Application defines the interface for the application.
 type Application interface {
 	RegisterModules(ctx context.Context, modules ...module.Module) error
 	Start(ctx context.Context) error
@@ -21,41 +22,41 @@ type Application interface {
 	GrpcServer() server.GRPCServer
 }
 
+// application is the implementation of the Application interface.
 type application struct {
 	mm      *module.ModuleManager
-	http    web.Server
-	gprc    server.GRPCServer
+	web     web.Server
+	grpc    server.GRPCServer
 	options *Options
 }
 
-// GrpcServer implements Application.
+// GrpcServer returns the gRPC server instance.
 func (a *application) GrpcServer() server.GRPCServer {
-	return a.gprc
+	return a.grpc
 }
 
-// Web implements Application.
+// WebServer returns the web server instance.
 func (a *application) WebServer() web.Server {
-	return a.http
+	return a.web
 }
 
-// GetOptions implements Application.
+// Options returns the application options.
 func (a *application) Options() *Options {
 	return a.options
 }
 
-// RegisterModules implements Application.
+// RegisterModules registers the provided modules with the application.
 func (a *application) RegisterModules(ctx context.Context, modules ...module.Module) error {
 	return a.mm.RegisterModules(ctx, modules...)
 }
 
-// Start implements Application.
-// Starts the application and all its components
+// Start starts the core modules, web server, and gRPC server concurrently.
 func (a *application) Start(ctx context.Context) error {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var combinedErr error
 
-	// Start Core Modules
+	// Start core modules
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -66,56 +67,44 @@ func (a *application) Start(ctx context.Context) error {
 		}
 	}()
 
-	// Start Web Server
+	// Start web server
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := a.http.Start(); err != nil {
+		if err := a.web.Start(); err != nil {
 			mu.Lock()
 			combinedErr = errors.Join(combinedErr, err)
 			mu.Unlock()
 		}
 	}()
 
-	// Start Grpc Server
+	// Start gRPC server
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := a.gprc.Start(); err != nil {
+		if err := a.grpc.Start(); err != nil {
 			mu.Lock()
 			combinedErr = errors.Join(combinedErr, err)
 			mu.Unlock()
 		}
 	}()
 
-	// Wait for all components to start
 	wg.Wait()
 
 	return combinedErr
 }
 
+// NewApplication creates and returns an instance of Application.
 func NewApplication(opts ...Option) Application {
 	appCfg := config.GetAppConfig()
 	options := newOptions(opts...)
 
-	var webMode string
-	if appCfg.Env == "development" {
-		webMode = "debug"
-	} else {
-		webMode = "release"
-	}
+	webServer := newWebServer(appCfg)
 
-	httpServer := web.NewGinServer(
-		web.WithAddress(fmt.Sprintf(":%s", appCfg.Server.Port)),
-		web.WithMode(webMode),
-	)
-
-	grpcConfig, err := server.GetConfig()
+	grpcServer, err := newGrpcServer()
 	if err != nil {
-		options.Logger.Fatal("failed to get grpc server config", logger.Error(err))
+		options.Logger.Fatal("failed to create grpc server", logger.Error(err))
 	}
-
-	gprcServer := server.NewGRPCServer(server.WithAddress(grpcConfig.Grpc.Address))
 
 	moduleManager := module.NewModuleManager(
 		module.WithLogger(options.Logger),
@@ -123,10 +112,51 @@ func NewApplication(opts ...Option) Application {
 		module.WithEventBus(options.EventBus),
 	)
 
-	return &application{
+	app := &application{
 		mm:      moduleManager,
 		options: options,
-		http:    httpServer,
-		gprc:    gprcServer,
+		web:     webServer,
+		grpc:    grpcServer,
+	}
+
+	// Register module routes
+	app.registerModuleRoutes()
+	return app
+}
+
+// newWebServer creates a web server based on the configuration.
+func newWebServer(appCfg *config.Config) web.Server {
+	var webMode string
+	if appCfg.Env == "development" {
+		webMode = "debug"
+	} else {
+		webMode = "release"
+	}
+
+	return web.NewGinEngine(
+		web.WithAddress(fmt.Sprintf(":%s", appCfg.Server.Port)),
+		web.WithMode(webMode),
+	)
+}
+
+// newGrpcServer creates a gRPC server based on the configuration.
+func newGrpcServer() (server.GRPCServer, error) {
+	grpcConfig, err := server.GetConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get grpc server config: %w", err)
+	}
+	return server.NewGRPCServer(server.WithAddress(grpcConfig.Grpc.Address)), nil
+}
+
+// registerModuleRoutes iterates over the modules and registers their routes.
+func (a *application) registerModuleRoutes() {
+	// Assume a.web implements RouterGroup.
+	routerGroup := a.web
+
+	// Iterate over all modules registered in your module manager.
+	for _, mod := range a.mm.GetModules() {
+		if routable, ok := mod.(web.Routable); ok {
+			routable.RegisterRoutes(routerGroup)
+		}
 	}
 }
