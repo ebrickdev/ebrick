@@ -1,7 +1,6 @@
-package server
+package grpc
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/ebrickdev/ebrick/config"
@@ -12,19 +11,19 @@ type Config struct {
 }
 
 type GrpcServerConfig struct {
+	Enabled bool   `yaml:"enabled"`
 	Address string `yaml:"address"`
 }
 
 // GetConfig loads and returns the configuration
 func GetConfig() (*Config, error) {
 	var cfg Config
-	err := config.LoadConfig("application", []string{"."}, &cfg)
-	if err != nil {
+	if err := config.LoadConfig("application", []string{"."}, &cfg); err != nil {
 		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
-	// Validate the configuration
-	if cfg.Grpc.Address == "" {
-		return nil, errors.New("grpc_server.address is required when gRPC is defined")
+	// Set default address if enabled and address is empty
+	if cfg.Grpc.Enabled && cfg.Grpc.Address == "" {
+		cfg.Grpc.Address = ":50051"
 	}
 	return &cfg, nil
 }

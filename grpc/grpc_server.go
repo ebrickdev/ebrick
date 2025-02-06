@@ -1,4 +1,4 @@
-package server
+package grpc
 
 import (
 	"log"
@@ -60,6 +60,6 @@ func (s *grpcServer) Stop() error {
 }
 
 // RegisterServices registers gRPC services with the server.
-func (s *grpcServer) RegisterServices(registerFunc func(s *grpc.Server)) {
+func (s *grpcServer) RegisterService(registerFunc func(s *grpc.Server)) {
 	registerFunc(s.server)
 }

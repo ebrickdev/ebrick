@@ -11,32 +11,36 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ginServer implements the Server interface using Gin
-type ginServer struct {
+// ginEngine implements the Server interface using Gin.
+type ginEngine struct {
 	engine *gin.Engine
 	server *http.Server
 }
 
-func NewGinServer(opts ...Option) Server {
+// NewGinEngine creates a new Gin-based engine with the provided options.
+func NewGinEngine(opts ...Option) WebServer {
 	options := newOptions(opts...)
 
 	// Set Gin mode (e.g., release, debug, test)
 	gin.SetMode(options.Mode)
 
-	// Create the Gin engine
-	engine := gin.New() // Use `gin.New()` instead of `gin.Default()` for custom middleware
+	// Create the Gin engine.
+	// Using gin.New() allows for custom middleware configuration.
+	engine := gin.New()
 
-	// Apply custom logger
+	// Apply custom logger middleware.
 	engine.Use(options.Logger)
 
-	// Apply middleware from options
+	// Apply additional middleware from options.
 	for _, m := range options.Middleware {
+		// Wrap each middleware to convert Gin context to our custom context.
 		engine.Use(func(c *gin.Context) {
 			m(NewGinContext(c))
 		})
-
 	}
-	return &ginServer{
+
+	// Construct and return the ginEngine.
+	return &ginEngine{
 		engine: engine,
 		server: &http.Server{
 			Addr:    options.Address,
@@ -45,53 +49,55 @@ func NewGinServer(opts ...Option) Server {
 	}
 }
 
-func (s *ginServer) GET(route string, handler HandlerFunc) {
+func (s *ginEngine) GET(route string, handler HandlerFunc) {
 	s.engine.GET(route, func(c *gin.Context) {
 		handler(NewGinContext(c))
 	})
 }
 
-func (s *ginServer) POST(route string, handler HandlerFunc) {
+func (s *ginEngine) POST(route string, handler HandlerFunc) {
 	s.engine.POST(route, func(c *gin.Context) {
 		handler(NewGinContext(c))
 	})
 }
 
-func (s *ginServer) PUT(route string, handler HandlerFunc) {
+func (s *ginEngine) PUT(route string, handler HandlerFunc) {
 	s.engine.PUT(route, func(c *gin.Context) {
 		handler(NewGinContext(c))
 	})
 }
 
-func (s *ginServer) PATCH(route string, handler HandlerFunc) {
+func (s *ginEngine) PATCH(route string, handler HandlerFunc) {
 	s.engine.PATCH(route, func(c *gin.Context) {
 		handler(NewGinContext(c))
 	})
 }
 
-func (s *ginServer) DELETE(route string, handler HandlerFunc) {
+func (s *ginEngine) DELETE(route string, handler HandlerFunc) {
 	s.engine.DELETE(route, func(c *gin.Context) {
 		handler(NewGinContext(c))
 	})
 }
 
-func (s *ginServer) OPTIONS(route string, handler HandlerFunc) {
+func (s *ginEngine) OPTIONS(route string, handler HandlerFunc) {
 	s.engine.OPTIONS(route, func(c *gin.Context) {
 		handler(NewGinContext(c))
 	})
 }
 
-func (s *ginServer) HEAD(route string, handler HandlerFunc) {
+func (s *ginEngine) HEAD(route string, handler HandlerFunc) {
 	s.engine.HEAD(route, func(c *gin.Context) {
 		handler(NewGinContext(c))
 	})
 }
 
-func (s *ginServer) Group(prefix string) RouterGroup {
+// Group creates a new RouterGroup with the specified prefix.
+func (s *ginEngine) Group(prefix string) RouterGroup {
 	return &ginRouterGroup{group: s.engine.Group(prefix)}
 }
 
-func (s *ginServer) Use(middleware ...HandlerFunc) {
+// Use registers one or more middleware handlers.
+func (s *ginEngine) Use(middleware ...HandlerFunc) {
 	for _, m := range middleware {
 		s.engine.Use(func(c *gin.Context) {
 			m(NewGinContext(c))
@@ -99,8 +105,9 @@ func (s *ginServer) Use(middleware ...HandlerFunc) {
 	}
 }
 
-func (s *ginServer) Start() error {
-	// Start the server in a goroutine
+// Start launches the web server and blocks until an OS signal is received for shutdown.
+func (s *ginEngine) Start() error {
+	// Start the server in a separate goroutine.
 	go func() {
 		log.Printf("WEB: Starting WebServer on %s", s.server.Addr)
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -108,7 +115,7 @@ func (s *ginServer) Start() error {
 		}
 	}()
 
-	// Handle OS signals for graceful shutdown
+	// Handle OS signals for graceful shutdown.
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
@@ -117,8 +124,10 @@ func (s *ginServer) Start() error {
 	return s.Stop()
 }
 
-func (s *ginServer) Stop() error {
-	// Use the configured shutdown timeout
+// Stop gracefully shuts down the server using a configured timeout.
+func (s *ginEngine) Stop() error {
+	// Use a shutdown timeout; options.WriteTimeout is used here,
+	// but you might consider a dedicated shutdown timeout option.
 	ctx, cancel := context.WithTimeout(context.Background(), s.server.WriteTimeout)
 	defer cancel()
 	return s.server.Shutdown(ctx)
