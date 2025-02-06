@@ -25,7 +25,7 @@ func NewApplication(opts ...Option) Application {
 
 	app := &application{
 		mm:         moduleManager,
-		webServer:  options.WebServer,
+		httpServer: options.HTTPServer,
 		grpcServer: options.GRPCServer,
 		options:    options,
 	}

@@ -1,6 +1,9 @@
 package grpc
 
-import "google.golang.org/grpc"
+import (
+	"github.com/ebrickdev/ebrick/transport"
+	"google.golang.org/grpc"
+)
 
 var (
 	DefaultAddress = ":0"
@@ -8,20 +11,11 @@ var (
 	DefaultVersion = "latest"
 )
 
-// Server defines the interface for a server with methods to initialize, start, and stop the server,
-// as well as retrieve its options.
-type Server interface {
-	// Retrieve the options
-	Options() Options
-	// Start the server
-	Start() error
-	// Stop the server
-	Stop() error
-}
-
 // GRPCServer defines the interface for a gRPC server.
 type GRPCServer interface {
-	Server
+	Options() Options
+
+	transport.Server
 	// RegisterServices allows registration of gRPC services
 	RegisterService(registerFunc func(s *grpc.Server))
 }

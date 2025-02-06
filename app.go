@@ -5,17 +5,17 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/ebrickdev/ebrick/grpc"
 	"github.com/ebrickdev/ebrick/logger"
 	"github.com/ebrickdev/ebrick/module"
-	"github.com/ebrickdev/ebrick/web"
+	"github.com/ebrickdev/ebrick/transport/grpc"
+	"github.com/ebrickdev/ebrick/transport/httpserver"
 )
 
 // Application defines the interface for the application.
 type Application interface {
 	RegisterModules(ctx context.Context, modules ...module.Module) error
 	GrpcServer() grpc.GRPCServer
-	WebServer() web.WebServer
+	HTTPServer() httpserver.HTTPServer
 	Start(ctx context.Context) error
 	Options() *Options
 }
@@ -23,7 +23,7 @@ type Application interface {
 // application is the implementation of the Application interface.
 type application struct {
 	mm         *module.ModuleManager
-	webServer  web.WebServer
+	httpServer httpserver.HTTPServer
 	grpcServer grpc.GRPCServer
 	options    *Options
 }
@@ -33,9 +33,9 @@ func (app *application) GrpcServer() grpc.GRPCServer {
 	return app.grpcServer
 }
 
-// WebServer returns the web server instance.
-func (app *application) WebServer() web.WebServer {
-	return app.webServer
+// HTTPServer returns the web server instance.
+func (app *application) HTTPServer() httpserver.HTTPServer {
+	return app.httpServer
 }
 
 // Options returns the application options.
@@ -70,7 +70,7 @@ func (app *application) Start(ctx context.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := app.WebServer().Start(); err != nil {
+		if err := app.httpServer.Start(); err != nil {
 			combineError(&combinedErrMu, &combinedErr, err)
 		}
 	}()
@@ -79,7 +79,7 @@ func (app *application) Start(ctx context.Context) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := app.GrpcServer().Start(); err != nil {
+			if err := app.grpcServer.Start(); err != nil {
 				combineError(&combinedErrMu, &combinedErr, err)
 			}
 		}()
@@ -89,16 +89,16 @@ func (app *application) Start(ctx context.Context) error {
 	return combinedErr
 }
 
-// registerRoutesAndServices registers all routes for modules implementing web.Routable or grpc.ServiceRegistrar.
+// registerRoutesAndServices registers all routes for modules implementing httpserver.Routable or grpc.ServiceRegistrar.
 func (app *application) registerRoutesAndServices(log logger.Logger) error {
 	for _, mod := range app.mm.GetModules() {
-		if routable, ok := mod.(web.Routable); ok {
+		if routable, ok := mod.(httpserver.Routable); ok {
 			log.Info("Registering routes for module", logger.String("module", mod.Name()))
-			routable.RegisterRoutes(app.WebServer())
+			routable.RegisterRoutes(app.httpServer)
 		}
 		if svcReg, ok := mod.(grpc.ServiceRegistrar); ok {
 			log.Info("Registering gRPC service for module", logger.String("module", mod.Name()))
-			svcReg.RegisterGRPCServices(app.GrpcServer())
+			svcReg.RegisterGRPCServices(app.grpcServer)
 		}
 	}
 	return nil
