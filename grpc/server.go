@@ -23,5 +23,9 @@ type Server interface {
 type GRPCServer interface {
 	Server
 	// RegisterServices allows registration of gRPC services
-	RegisterServices(registerFunc func(s *grpc.Server))
+	RegisterService(registerFunc func(s *grpc.Server))
+}
+
+type ServiceRegistrar interface {
+	RegisterGRPCServices(s GRPCServer)
 }

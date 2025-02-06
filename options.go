@@ -1,6 +1,8 @@
 package ebrick
 
 import (
+	"fmt"
+
 	"github.com/ebrickdev/ebrick/cache"
 	"github.com/ebrickdev/ebrick/config"
 	"github.com/ebrickdev/ebrick/event"
@@ -60,12 +62,28 @@ func newOptions(opts ...Option) *Options {
 	// Initialize WebServer if not provided.
 	// NewWebServer uses the application config to configure the server.
 	if opt.WebServer == nil {
-		opt.WebServer = NewWebServer(cfg)
+		var webMode string
+		if cfg.Env == "development" {
+			webMode = "debug"
+		} else {
+			webMode = "release"
+		}
+
+		opt.WebServer = web.NewGinEngine(
+			web.WithAddress(fmt.Sprintf(":%s", cfg.Server.Port)),
+			web.WithMode(webMode),
+		)
 	}
 
 	// Conditionally initialize GRPCServer if not provided and if enabled in config.
 	if opt.GRPCServer == nil {
-		opt.GRPCServer = NewGRPCServer(opt)
+		grpcConfig, err := grpc.GetConfig()
+		if err != nil {
+			opt.Logger.Fatal("failed to create grpc server", logger.Error(err))
+		}
+		if grpcConfig.Grpc.Enabled {
+			opt.GRPCServer = grpc.NewGRPCServer(grpc.WithAddress(grpcConfig.Grpc.Address))
+		}
 	}
 
 	return opt
