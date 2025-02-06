@@ -31,27 +31,27 @@ type application struct {
 }
 
 // GrpcServer returns the gRPC server instance.
-func (a *application) GrpcServer() server.GRPCServer {
-	return a.grpc
+func (app *application) GrpcServer() server.GRPCServer {
+	return app.grpc
 }
 
 // WebServer returns the web server instance.
-func (a *application) WebServer() web.Server {
-	return a.web
+func (app *application) WebServer() web.Server {
+	return app.web
 }
 
 // Options returns the application options.
-func (a *application) Options() *Options {
-	return a.options
+func (app *application) Options() *Options {
+	return app.options
 }
 
 // RegisterModules registers the provided modules with the application.
-func (a *application) RegisterModules(ctx context.Context, modules ...module.Module) error {
-	return a.mm.RegisterModules(ctx, modules...)
+func (app *application) RegisterModules(ctx context.Context, modules ...module.Module) error {
+	return app.mm.RegisterModules(ctx, modules...)
 }
 
 // Start starts the core modules, web server, and gRPC server concurrently.
-func (a *application) Start(ctx context.Context) error {
+func (app *application) Start(ctx context.Context) error {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var combinedErr error
@@ -60,7 +60,17 @@ func (a *application) Start(ctx context.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := a.mm.StartAllModules(ctx); err != nil {
+
+		// Register routes for all modules
+		for _, mod := range app.mm.GetModules() {
+			if routable, ok := mod.(web.Routable); ok {
+				logger.DefaultLogger.Info("Registering routes for module", logger.String("module", mod.Name()))
+				routable.RegisterRoutes(app.web)
+			}
+		}
+
+		// Start all modules
+		if err := app.mm.StartAllModules(ctx); err != nil {
 			mu.Lock()
 			combinedErr = errors.Join(combinedErr, err)
 			mu.Unlock()
@@ -71,7 +81,7 @@ func (a *application) Start(ctx context.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := a.web.Start(); err != nil {
+		if err := app.web.Start(); err != nil {
 			mu.Lock()
 			combinedErr = errors.Join(combinedErr, err)
 			mu.Unlock()
@@ -82,7 +92,7 @@ func (a *application) Start(ctx context.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := a.grpc.Start(); err != nil {
+		if err := app.grpc.Start(); err != nil {
 			mu.Lock()
 			combinedErr = errors.Join(combinedErr, err)
 			mu.Unlock()
@@ -118,9 +128,6 @@ func NewApplication(opts ...Option) Application {
 		web:     webServer,
 		grpc:    grpcServer,
 	}
-
-	// Register module routes
-	app.registerModuleRoutes()
 	return app
 }
 
@@ -146,17 +153,4 @@ func newGrpcServer() (server.GRPCServer, error) {
 		return nil, fmt.Errorf("failed to get grpc server config: %w", err)
 	}
 	return server.NewGRPCServer(server.WithAddress(grpcConfig.Grpc.Address)), nil
-}
-
-// registerModuleRoutes iterates over the modules and registers their routes.
-func (a *application) registerModuleRoutes() {
-	// Assume a.web implements RouterGroup.
-	routerGroup := a.web
-
-	// Iterate over all modules registered in your module manager.
-	for _, mod := range a.mm.GetModules() {
-		if routable, ok := mod.(web.Routable); ok {
-			routable.RegisterRoutes(routerGroup)
-		}
-	}
 }
