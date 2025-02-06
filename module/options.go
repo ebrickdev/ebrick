@@ -2,14 +2,14 @@ package module
 
 import (
 	"github.com/ebrickdev/ebrick/cache"
-	"github.com/ebrickdev/ebrick/event"
 	"github.com/ebrickdev/ebrick/logger"
+	"github.com/ebrickdev/ebrick/messaging"
 )
 
 type Options struct {
 	Cache    cache.Cache
 	Logger   logger.Logger
-	EventBus event.EventBus
+	EventBus messaging.EventBus
 }
 
 type Option func(*Options)
@@ -36,7 +36,7 @@ func WithLogger(l logger.Logger) Option {
 	}
 }
 
-func WithEventBus(e event.EventBus) Option {
+func WithEventBus(e messaging.EventBus) Option {
 	return func(o *Options) {
 		o.EventBus = e
 	}
