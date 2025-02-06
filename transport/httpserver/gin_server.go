@@ -1,4 +1,4 @@
-package web
+package httpserver
 
 import (
 	"context"
@@ -18,7 +18,7 @@ type ginEngine struct {
 }
 
 // NewGinEngine creates a new Gin-based engine with the provided options.
-func NewGinEngine(opts ...Option) WebServer {
+func NewHTTPServer(opts ...Option) HTTPServer {
 	options := newOptions(opts...)
 
 	// Set Gin mode (e.g., release, debug, test)
@@ -109,7 +109,7 @@ func (s *ginEngine) Use(middleware ...HandlerFunc) {
 func (s *ginEngine) Start() error {
 	// Start the server in a separate goroutine.
 	go func() {
-		log.Printf("WEB: Starting WebServer on %s", s.server.Addr)
+		log.Printf("WEB: Starting HTTPServer on %s", s.server.Addr)
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Printf("Server error: %v", err)
 		}

@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 )
@@ -56,30 +57,39 @@ func mergeFields(defaultFields, fields map[string]any) map[string]any {
 	return merged
 }
 
+// formatFields converts fields to a readable JSON string.
+func formatFields(fields map[string]any) string {
+	jsonData, err := json.MarshalIndent(fields, "", "  ")
+	if err != nil {
+		return "{\"error\": \"failed to format fields\"}"
+	}
+	return string(jsonData)
+}
+
 // Debug logs a debug message.
 func (l *defaultLogger) Debug(msg string, fields map[string]any) {
 	if l.debugLogger != nil {
 		allFields := mergeFields(l.defaultFields, fields)
-		l.debugLogger.Printf("%s | %v", msg, allFields)
+		l.debugLogger.Printf("%s | %s", msg, formatFields(allFields))
 	}
 }
 
 // Info logs an informational message.
 func (l *defaultLogger) Info(msg string, fields map[string]any) {
 	allFields := mergeFields(l.defaultFields, fields)
-	l.infoLogger.Printf("%s | %v", msg, allFields)
+	l.infoLogger.Printf("%s | %s", msg, formatFields(allFields))
 }
 
 // Warn logs a warning message.
 func (l *defaultLogger) Warn(msg string, fields map[string]any) {
 	allFields := mergeFields(l.defaultFields, fields)
-	l.infoLogger.Printf("WARN: %s | %v", msg, allFields)
+	l.infoLogger.Printf("WARN: %s | %s", msg, formatFields(allFields))
 }
 
 // Error logs an error message.
 func (l *defaultLogger) Error(msg string, fields map[string]any) {
 	allFields := mergeFields(l.defaultFields, fields)
-	l.errorLogger.Printf("%s | %v", msg, allFields)
+	l.errorLogger.Printf("%s | %s", msg, formatFields(allFields))
 }
 
 // DPanic logs a debug panic message and panics.
@@ -97,7 +107,7 @@ func (l *defaultLogger) Panic(msg string, fields map[string]any) {
 // Fatal logs a fatal message and exits.
 func (l *defaultLogger) Fatal(msg string, fields map[string]any) {
 	allFields := mergeFields(l.defaultFields, fields)
-	l.errorLogger.Printf("FATAL: %s | %v", msg, allFields)
+	l.errorLogger.Printf("FATAL: %s | %s", msg, formatFields(allFields))
 	os.Exit(1)
 }
 

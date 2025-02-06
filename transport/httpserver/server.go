@@ -1,7 +1,9 @@
-package web
+package httpserver
 
 import (
 	"net/http"
+
+	"github.com/ebrickdev/ebrick/transport"
 )
 
 // HandlerFunc defines a generic HTTP handler function type.
@@ -48,14 +50,12 @@ type RouterGroup interface {
 }
 
 // Server defines the abstraction for the web server.
-type WebServer interface {
+type HTTPServer interface {
 	RouterGroup
 	// Use registers middleware handlers.
 	Use(middleware ...HandlerFunc)
-	// Start launches the web server.
-	Start() error
-	// Stop stops the web server.
-	Stop() error
+
+	transport.Server
 }
 
 // Routable is an optional interface that modules can implement to register HTTP routes.
