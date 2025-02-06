@@ -18,7 +18,7 @@ type ginEngine struct {
 }
 
 // NewGinEngine creates a new Gin-based engine with the provided options.
-func NewGinEngine(opts ...Option) Server {
+func NewGinEngine(opts ...Option) WebServer {
 	options := newOptions(opts...)
 
 	// Set Gin mode (e.g., release, debug, test)

@@ -1,4 +1,4 @@
-package server
+package grpc
 
 import (
 	"errors"
@@ -12,6 +12,7 @@ type Config struct {
 }
 
 type GrpcServerConfig struct {
+	Enable  bool   `yaml:"enable"`
 	Address string `yaml:"address"`
 }
 

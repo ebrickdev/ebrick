@@ -21,9 +21,14 @@ func init() {
 type Config struct {
 	Env    string
 	Server ServerConfig
+	Grpc   GrpcConfig
 }
 type ServerConfig struct {
 	Port string
+}
+
+type GrpcConfig struct {
+	Enable bool
 }
 
 // LoadConfig loads the configuration from the specified paths.

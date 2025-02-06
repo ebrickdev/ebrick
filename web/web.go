@@ -48,7 +48,7 @@ type RouterGroup interface {
 }
 
 // Server defines the abstraction for the web server.
-type Server interface {
+type WebServer interface {
 	RouterGroup
 	// Use registers middleware handlers.
 	Use(middleware ...HandlerFunc)
