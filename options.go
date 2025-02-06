@@ -5,21 +5,21 @@ import (
 
 	"github.com/ebrickdev/ebrick/cache"
 	"github.com/ebrickdev/ebrick/config"
-	"github.com/ebrickdev/ebrick/event"
 	"github.com/ebrickdev/ebrick/grpc"
 	"github.com/ebrickdev/ebrick/logger"
+	"github.com/ebrickdev/ebrick/messaging"
 	"github.com/ebrickdev/ebrick/web"
 )
 
 // Options holds both configuration values and runtime dependencies
 type Options struct {
-	Name       string          // Application name
-	Version    string          // Application version
-	Cache      cache.Cache     // Cache instance
-	Logger     logger.Logger   // Logger instance
-	EventBus   event.EventBus  // Event bus instance for inter-component communication
-	WebServer  web.WebServer   // HTTP server instance
-	GRPCServer grpc.GRPCServer // gRPC server instance; optional
+	Name       string             // Application name
+	Version    string             // Application version
+	Cache      cache.Cache        // Cache instance
+	Logger     logger.Logger      // Logger instance
+	EventBus   messaging.EventBus // Event bus instance for inter-component communication
+	WebServer  web.WebServer      // HTTP server instance
+	GRPCServer grpc.GRPCServer    // gRPC server instance; optional
 }
 
 // Option defines a function type to configure Options
@@ -52,7 +52,7 @@ func newOptions(opts ...Option) *Options {
 	// Initialize EventBus if not provided
 	if opt.EventBus == nil {
 		// Attempt to create an in-memory event bus. Log error if initialization fails.
-		eventBus, err := event.NewMemoryEventBus()
+		eventBus, err := messaging.NewMemoryEventBus()
 		if err != nil {
 			opt.Logger.Error("Failed to create event bus")
 		}
@@ -110,7 +110,7 @@ func WithLogger(l logger.Logger) Option {
 }
 
 // WithEventBus sets the EventBus dependency.
-func WithEventBus(eventBus event.EventBus) Option {
+func WithEventBus(eventBus messaging.EventBus) Option {
 	return func(o *Options) { o.EventBus = eventBus }
 }
 
