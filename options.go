@@ -9,6 +9,7 @@ import (
 	"github.com/ebrickdev/ebrick/messaging"
 	"github.com/ebrickdev/ebrick/transport/grpc"
 	"github.com/ebrickdev/ebrick/transport/httpserver"
+	"gorm.io/gorm"
 )
 
 // Options holds both configuration values and runtime dependencies
@@ -20,6 +21,7 @@ type Options struct {
 	EventBus   messaging.EventBus    // Event bus instance for inter-component communication
 	HTTPServer httpserver.HTTPServer // HTTP server instance
 	GRPCServer grpc.GRPCServer       // gRPC server instance; optional
+	DB         *gorm.DB
 }
 
 // Option defines a function type to configure Options
@@ -32,9 +34,7 @@ func newOptions(opts ...Option) *Options {
 	cfg := config.GetAppConfig()
 
 	// Initialize Options with a default Logger (could be overridden by WithLogger)
-	opt := &Options{
-		Logger: logger.DefaultLogger,
-	}
+	opt := &Options{}
 
 	// Apply functional options to override default values
 	for _, o := range opts {
@@ -122,4 +122,9 @@ func WithHTTPServer(httpServer httpserver.HTTPServer) Option {
 // WithGRPCServer sets the GRPCServer dependency.
 func WithGRPCServer(grpcServer grpc.GRPCServer) Option {
 	return func(o *Options) { o.GRPCServer = grpcServer }
+}
+
+// WithDB sets the DB dependency.
+func WithDB(db *gorm.DB) Option {
+	return func(o *Options) { o.DB = db }
 }
