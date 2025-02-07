@@ -6,6 +6,8 @@ import (
 	"github.com/ebrickdev/ebrick/transport"
 )
 
+type H map[string]any
+
 // HandlerFunc defines a generic HTTP handler function type.
 type HandlerFunc func(ctx Context)
 
@@ -19,8 +21,16 @@ type Context interface {
 	Param(key string) string
 	// Query retrieves a query parameter by name.
 	Query(key string) string
-	// BindJSON parses the request body as JSON into the given object.
-	BindJSON(obj interface{}) error
+	// ShouldBindJSON parses the request body as JSON into the given object.
+	ShouldBindJSON(obj interface{}) error
+	// ShouldBindBodyWithJSON is a shortcut for c.ShouldBindBodyWith(obj, binding.JSON).
+	ShouldBindBodyWithJSON(obj any) error
+	// ShouldBindBodyWithXML is a shortcut for c.ShouldBindBodyWith(obj, binding.XML).
+	ShouldBindBodyWithXML(obj any) error
+	// ShouldBindBodyWithYAML is a shortcut for c.ShouldBindBodyWith(obj, binding.YAML).
+	ShouldBindBodyWithYAML(obj any) error
+	// ShouldBindBodyWithTOML is a shortcut for c.ShouldBindBodyWith(obj, binding.TOML).
+	ShouldBindBodyWithTOML(obj any) error
 	// Next executes the next handler in the middleware chain.
 	Next()
 	// Request returns the underlying HTTP request.
@@ -29,6 +39,14 @@ type Context interface {
 	ClientIP() string
 	// SetHeader sets a header in the response.
 	SetHeader(key, value string)
+	// Get retrieves a value from the context by key.
+	Get(key string) (value any, exists bool)
+	// Set sets a key-value pair in the context.
+	Set(key string, value any)
+	// AbortWithStatus aborts the request with the specified status code.
+	AbortWithStatus(code int)
+	// Abort aborts the request.
+	Abort()
 }
 
 // Router defines the core HTTP routing interface.
@@ -47,14 +65,12 @@ type RouterGroup interface {
 	Router
 	// Group creates a new RouterGroup with the given prefix.
 	Group(prefix string) RouterGroup
+	Use(middleware ...HandlerFunc)
 }
 
 // Server defines the abstraction for the web server.
 type HTTPServer interface {
 	RouterGroup
-	// Use registers middleware handlers.
-	Use(middleware ...HandlerFunc)
-
 	transport.Server
 }
 
