@@ -9,6 +9,15 @@ type ginRouterGroup struct {
 	group *gin.RouterGroup
 }
 
+// Use registers one or more middleware handlers.
+func (s *ginRouterGroup) Use(middleware ...HandlerFunc) {
+	for _, m := range middleware {
+		s.group.Use(func(c *gin.Context) {
+			m(NewGinContext(c))
+		})
+	}
+}
+
 // Group implements RouterGroup.
 func (g *ginRouterGroup) Group(prefix string) RouterGroup {
 	return &ginRouterGroup{group: g.group.Group(prefix)}
