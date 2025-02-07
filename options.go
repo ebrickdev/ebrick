@@ -3,6 +3,7 @@ package ebrick
 import (
 	"fmt"
 
+	"github.com/ebrickdev/ebrick/auth"
 	"github.com/ebrickdev/ebrick/cache"
 	"github.com/ebrickdev/ebrick/config"
 	"github.com/ebrickdev/ebrick/logger"
@@ -22,6 +23,7 @@ type Options struct {
 	HTTPServer httpserver.HTTPServer // HTTP server instance
 	GRPCServer grpc.GRPCServer       // gRPC server instance; optional
 	DB         *gorm.DB
+	Auth       auth.Authenticator
 }
 
 // Option defines a function type to configure Options
@@ -127,4 +129,8 @@ func WithGRPCServer(grpcServer grpc.GRPCServer) Option {
 // WithDB sets the DB dependency.
 func WithDB(db *gorm.DB) Option {
 	return func(o *Options) { o.DB = db }
+}
+
+func WithAuth(authenticator auth.Authenticator) Option {
+	return func(o *Options) { o.Auth = authenticator }
 }
