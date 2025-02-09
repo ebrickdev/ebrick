@@ -92,10 +92,6 @@ func (app *application) Start(ctx context.Context) error {
 // registerRoutesAndServices registers all routes for modules implementing httpserver.Routable or grpc.ServiceRegistrar.
 func (app *application) registerRoutesAndServices(log logger.Logger) error {
 	for _, mod := range app.mm.GetModules() {
-		if routable, ok := mod.(httpserver.Routable); ok {
-			log.Info("Registering routes for module", logger.String("module", mod.Name()))
-			routable.RegisterRoutes(app.httpServer)
-		}
 		if svcReg, ok := mod.(grpc.ServiceRegistrar); ok {
 			log.Info("Registering gRPC service for module", logger.String("module", mod.Name()))
 			svcReg.RegisterGRPCServices(app.grpcServer)

@@ -3,11 +3,11 @@ package ebrick
 import (
 	"fmt"
 
-	"github.com/ebrickdev/ebrick/auth"
 	"github.com/ebrickdev/ebrick/cache"
 	"github.com/ebrickdev/ebrick/config"
 	"github.com/ebrickdev/ebrick/logger"
 	"github.com/ebrickdev/ebrick/messaging"
+	"github.com/ebrickdev/ebrick/security/auth"
 	"github.com/ebrickdev/ebrick/transport/grpc"
 	"github.com/ebrickdev/ebrick/transport/httpserver"
 	"gorm.io/gorm"
@@ -15,15 +15,15 @@ import (
 
 // Options holds both configuration values and runtime dependencies
 type Options struct {
-	Name       string                // Application name
-	Version    string                // Application version
-	Cache      cache.Cache           // Cache instance
-	Logger     logger.Logger         // Logger instance
-	EventBus   messaging.EventBus    // Event bus instance for inter-component communication
-	HTTPServer httpserver.HTTPServer // HTTP server instance
-	GRPCServer grpc.GRPCServer       // gRPC server instance; optional
-	DB         *gorm.DB
-	Auth       auth.Authenticator
+	Name        string                // Application name
+	Version     string                // Application version
+	Cache       cache.Cache           // Cache instance
+	Logger      logger.Logger         // Logger instance
+	EventBus    messaging.EventBus    // Event bus instance for inter-component communication
+	HTTPServer  httpserver.HTTPServer // HTTP server instance
+	GRPCServer  grpc.GRPCServer       // gRPC server instance; optional
+	DB          *gorm.DB
+	AuthManager auth.AuthManager
 }
 
 // Option defines a function type to configure Options
@@ -131,6 +131,6 @@ func WithDB(db *gorm.DB) Option {
 	return func(o *Options) { o.DB = db }
 }
 
-func WithAuth(authenticator auth.Authenticator) Option {
-	return func(o *Options) { o.Auth = authenticator }
+func WithAuth(authManager auth.AuthManager) Option {
+	return func(o *Options) { o.AuthManager = authManager }
 }

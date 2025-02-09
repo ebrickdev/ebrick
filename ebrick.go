@@ -1,21 +1,31 @@
 package ebrick
 
 import (
+	"github.com/ebrickdev/ebrick/logger"
+	"github.com/ebrickdev/ebrick/messaging"
 	"github.com/ebrickdev/ebrick/module"
+	"github.com/ebrickdev/ebrick/security/auth"
+	"github.com/ebrickdev/ebrick/transport/grpc"
+	"github.com/ebrickdev/ebrick/transport/httpserver"
 )
 
-// NewApplication creates a new instance of Application with the provided options.
-// It initializes the application configuration, web server, gRPC server, and module manager.
-//
-// Parameters:
-//
-//	opts - A variadic list of Option functions to configure the application.
-//
-// Returns:
-//
-//	An instance of Application.
+var (
+	EventBus    messaging.EventBus
+	Logger      logger.Logger
+	HTTPServer  httpserver.HTTPServer
+	GRPCServer  grpc.GRPCServer
+	AuthManager auth.AuthManager
+)
+
 func NewApplication(opts ...Option) Application {
 	options := newOptions(opts...)
+
+	// Set the global variables here.
+	EventBus = options.EventBus
+	Logger = options.Logger
+	HTTPServer = options.HTTPServer
+	GRPCServer = options.GRPCServer
+	AuthManager = options.AuthManager
 
 	moduleManager := module.NewModuleManager(
 		module.WithLogger(options.Logger),
@@ -29,5 +39,6 @@ func NewApplication(opts ...Option) Application {
 		grpcServer: options.GRPCServer,
 		options:    options,
 	}
+
 	return app
 }

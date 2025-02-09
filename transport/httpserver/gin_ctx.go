@@ -98,5 +98,4 @@ func (g *ginContext) ClientIP() string {
 // SetHeader sets a header key-value pair in the response.
 func (g *ginContext) SetHeader(key, value string) {
 	g.ctx.Header(key, value)
-
 }
