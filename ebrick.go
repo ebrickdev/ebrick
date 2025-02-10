@@ -31,6 +31,7 @@ func NewApplication(opts ...Option) Application {
 		module.WithLogger(options.Logger),
 		module.WithCache(options.Cache),
 		module.WithEventBus(options.EventBus),
+		module.WithDB(options.DB),
 	)
 
 	app := &application{
