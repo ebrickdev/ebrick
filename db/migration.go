@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	"gorm.io/gorm"
 )
 
 // CreateTables creates database tables for the given models using GORM's AutoMigrate function.
-func CreateTables(models ...interface{}) error {
+func CreateTables(db *gorm.DB, models ...interface{}) error {
 
 	for _, model := range models {
-		if err := DefaultDataSource.AutoMigrate(model); err != nil {
+		if err := db.AutoMigrate(model); err != nil {
 			return err
 		}
 	}
@@ -18,16 +20,16 @@ func CreateTables(models ...interface{}) error {
 }
 
 // DropTables drops database tables for the given models using GORM's DropTable function.
-func DropTables(models ...interface{}) error {
+func DropTables(db *gorm.DB, models ...interface{}) error {
 	for _, model := range models {
-		if err := DefaultDataSource.Migrator().DropTable(model); err != nil {
+		if err := db.Migrator().DropTable(model); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func CreateEnumTypes(enumStatements ...string) error {
+func CreateEnumTypes(db *gorm.DB, enumStatements ...string) error {
 	// List of ENUM creation statements
 	for _, stmt := range enumStatements {
 		// Execute the statement if the type does not exist
@@ -41,12 +43,12 @@ func CreateEnumTypes(enumStatements ...string) error {
 			);
 		`
 		typeName := getTypeNameFromCreateStmt(stmt)
-		if err := DefaultDataSource.Raw(checkStmt, typeName).Scan(&exists).Error; err != nil {
+		if err := db.Raw(checkStmt, typeName).Scan(&exists).Error; err != nil {
 			return err
 		}
 
 		if !exists {
-			if err := DefaultDataSource.Exec(stmt).Error; err != nil {
+			if err := db.Exec(stmt).Error; err != nil {
 				return err
 			}
 			log.Printf("Created ENUM type: %s", typeName)
