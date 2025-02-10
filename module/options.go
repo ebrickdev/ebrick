@@ -4,12 +4,14 @@ import (
 	"github.com/ebrickdev/ebrick/cache"
 	"github.com/ebrickdev/ebrick/logger"
 	"github.com/ebrickdev/ebrick/messaging"
+	"gorm.io/gorm"
 )
 
 type Options struct {
 	Cache    cache.Cache
 	Logger   logger.Logger
 	EventBus messaging.EventBus
+	Db       *gorm.DB
 }
 
 type Option func(*Options)
@@ -39,5 +41,11 @@ func WithLogger(l logger.Logger) Option {
 func WithEventBus(e messaging.EventBus) Option {
 	return func(o *Options) {
 		o.EventBus = e
+	}
+}
+
+func WithDB(db *gorm.DB) Option {
+	return func(o *Options) {
+		o.Db = db
 	}
 }
