@@ -7,6 +7,7 @@ import (
 	"github.com/ebrickdev/ebrick/security/auth"
 	"github.com/ebrickdev/ebrick/transport/grpc"
 	"github.com/ebrickdev/ebrick/transport/httpserver"
+	"gorm.io/gorm"
 )
 
 var (
@@ -15,6 +16,7 @@ var (
 	HTTPServer  httpserver.HTTPServer
 	GRPCServer  grpc.GRPCServer
 	AuthManager auth.AuthManager
+	DB          *gorm.DB
 )
 
 func NewApplication(opts ...Option) Application {
@@ -26,6 +28,7 @@ func NewApplication(opts ...Option) Application {
 	HTTPServer = options.HTTPServer
 	GRPCServer = options.GRPCServer
 	AuthManager = options.AuthManager
+	DB = options.DB
 
 	moduleManager := module.NewModuleManager(
 		module.WithLogger(options.Logger),
