@@ -9,19 +9,19 @@ import (
 	"github.com/ebrickdev/ebrick/messaging"
 	"github.com/ebrickdev/ebrick/security/auth"
 	"github.com/ebrickdev/ebrick/transport/grpc"
-	"github.com/ebrickdev/ebrick/transport/httpserver"
+	"github.com/ebrickdev/ebrick/transport/http"
 	"gorm.io/gorm"
 )
 
 // Options holds both configuration values and runtime dependencies
 type Options struct {
-	Name        string                // Application name
-	Version     string                // Application version
-	Cache       cache.Cache           // Cache instance
-	Logger      logger.Logger         // Logger instance
-	EventBus    messaging.EventBus    // Event bus instance for inter-component communication
-	HTTPServer  httpserver.HTTPServer // HTTP server instance
-	GRPCServer  grpc.GRPCServer       // gRPC server instance; optional
+	Name        string             // Application name
+	Version     string             // Application version
+	Cache       cache.Cache        // Cache instance
+	Logger      logger.Logger      // Logger instance
+	EventBus    messaging.EventBus // Event bus instance for inter-component communication
+	http        http.HTTPServer    // HTTP server instance
+	GRPCServer  grpc.GRPCServer    // gRPC server instance; optional
 	DB          *gorm.DB
 	AuthManager auth.AuthManager
 }
@@ -61,9 +61,9 @@ func newOptions(opts ...Option) *Options {
 		opt.EventBus = eventBus
 	}
 
-	// Initialize HTTPServer if not provided.
-	// NewHTTPServer uses the application config to configure the server.
-	if opt.HTTPServer == nil {
+	// Initialize http if not provided.
+	// Newhttp uses the application config to configure the server.
+	if opt.http == nil {
 		var webMode string
 		if cfg.Env == "development" {
 			webMode = "debug"
@@ -71,9 +71,9 @@ func newOptions(opts ...Option) *Options {
 			webMode = "release"
 		}
 
-		opt.HTTPServer = httpserver.NewHTTPServer(
-			httpserver.WithAddress(fmt.Sprintf(":%s", cfg.Server.Port)),
-			httpserver.WithMode(webMode),
+		opt.http = http.NewHTTPServer(
+			http.WithAddress(fmt.Sprintf(":%s", cfg.Server.Port)),
+			http.WithMode(webMode),
 		)
 	}
 
@@ -116,9 +116,9 @@ func WithEventBus(eventBus messaging.EventBus) Option {
 	return func(o *Options) { o.EventBus = eventBus }
 }
 
-// WithHTTPServer sets the HTTPServer dependency.
-func WithHTTPServer(httpServer httpserver.HTTPServer) Option {
-	return func(o *Options) { o.HTTPServer = httpServer }
+// Withhttp sets the http dependency.
+func Withhttp(http http.HTTPServer) Option {
+	return func(o *Options) { o.http = http }
 }
 
 // WithGRPCServer sets the GRPCServer dependency.

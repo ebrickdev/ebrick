@@ -6,14 +6,14 @@ import (
 	"github.com/ebrickdev/ebrick/module"
 	"github.com/ebrickdev/ebrick/security/auth"
 	"github.com/ebrickdev/ebrick/transport/grpc"
-	"github.com/ebrickdev/ebrick/transport/httpserver"
+	"github.com/ebrickdev/ebrick/transport/http"
 	"gorm.io/gorm"
 )
 
 var (
 	EventBus    messaging.EventBus
 	Logger      logger.Logger
-	HTTPServer  httpserver.HTTPServer
+	HTTPServer  http.HTTPServer
 	GRPCServer  grpc.GRPCServer
 	AuthManager auth.AuthManager
 	DB          *gorm.DB
@@ -25,7 +25,7 @@ func NewApplication(opts ...Option) Application {
 	// Set the global variables here.
 	EventBus = options.EventBus
 	Logger = options.Logger
-	HTTPServer = options.HTTPServer
+	HTTPServer = options.http
 	GRPCServer = options.GRPCServer
 	AuthManager = options.AuthManager
 	DB = options.DB
@@ -39,7 +39,7 @@ func NewApplication(opts ...Option) Application {
 
 	app := &application{
 		mm:         moduleManager,
-		httpServer: options.HTTPServer,
+		httpServer: options.http,
 		grpcServer: options.GRPCServer,
 		options:    options,
 	}
