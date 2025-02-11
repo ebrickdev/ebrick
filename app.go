@@ -8,14 +8,14 @@ import (
 	"github.com/ebrickdev/ebrick/logger"
 	"github.com/ebrickdev/ebrick/module"
 	"github.com/ebrickdev/ebrick/transport/grpc"
-	"github.com/ebrickdev/ebrick/transport/httpserver"
+	"github.com/ebrickdev/ebrick/transport/http"
 )
 
 // Application defines the interface for the application.
 type Application interface {
 	RegisterModules(ctx context.Context, modules ...module.Module) error
 	GrpcServer() grpc.GRPCServer
-	HTTPServer() httpserver.HTTPServer
+	HTTPServer() http.HTTPServer
 	Start(ctx context.Context) error
 	Options() *Options
 }
@@ -23,7 +23,7 @@ type Application interface {
 // application is the implementation of the Application interface.
 type application struct {
 	mm         *module.ModuleManager
-	httpServer httpserver.HTTPServer
+	httpServer http.HTTPServer
 	grpcServer grpc.GRPCServer
 	options    *Options
 }
@@ -34,7 +34,7 @@ func (app *application) GrpcServer() grpc.GRPCServer {
 }
 
 // HTTPServer returns the web server instance.
-func (app *application) HTTPServer() httpserver.HTTPServer {
+func (app *application) HTTPServer() http.HTTPServer {
 	return app.httpServer
 }
 
@@ -89,7 +89,7 @@ func (app *application) Start(ctx context.Context) error {
 	return combinedErr
 }
 
-// registerRoutesAndServices registers all routes for modules implementing httpserver.Routable or grpc.ServiceRegistrar.
+// registerRoutesAndServices registers all routes for modules implementing http.Routable or grpc.ServiceRegistrar.
 func (app *application) registerRoutesAndServices(log logger.Logger) error {
 	for _, mod := range app.mm.GetModules() {
 		if svcReg, ok := mod.(grpc.ServiceRegistrar); ok {
