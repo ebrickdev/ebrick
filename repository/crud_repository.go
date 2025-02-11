@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-playground/validator/v10"
@@ -8,99 +9,116 @@ import (
 	"gorm.io/gorm"
 )
 
+// CrudRepository defines a set of generic CRUD operations.
+// Note: T is expected to be a struct type.
 type CrudRepository[T any] interface {
-	Create(et *T) (*T, error)
-	FindByID(id uuid.UUID) (*T, error)
-	Update(et *T) (*T, error)
-	Delete(id uuid.UUID) error
-	ListAll() ([]T, error)
-	First(et *T) (*T, error)
-	FindWithEntity(et *T) ([]T, error)
-	FindWithConditions(conditions map[string]any) ([]T, error)
-	FindWithOrConditions(conditions map[string]any) ([]T, error)
-	CountWithConditions(conditions map[string]any) (int64, error)
-	CountWithEntity(et *T) (int64, error)
+	Create(ctx context.Context, et *T) (*T, error)
+	FindByID(ctx context.Context, id uuid.UUID) (*T, error)
+	Update(ctx context.Context, et *T) (*T, error)
+	Delete(ctx context.Context, id uuid.UUID) error
+	ListAll(ctx context.Context) ([]T, error)
+	First(ctx context.Context, et *T) (*T, error)
+	FindWithEntity(ctx context.Context, et *T) ([]T, error)
+	FindWithConditions(ctx context.Context, conditions map[string]any) ([]T, error)
+	FindWithOrConditions(ctx context.Context, conditions map[string]any) ([]T, error)
+	CountWithConditions(ctx context.Context, conditions map[string]any) (int64, error)
+	CountWithEntity(ctx context.Context, et *T) (int64, error)
+	Exists(ctx context.Context, conditions map[string]any) (bool, error)
 }
 
+// NewCrudRepository creates a new CrudRepository instance for type T.
+// It also initializes a validator instance for reuse.
 func NewCrudRepository[T any](db *gorm.DB) CrudRepository[T] {
-	return &crudRepository[T]{db: db}
+	return &crudRepository[T]{
+		db:       db,
+		validate: validator.New(),
+	}
 }
 
 type crudRepository[T any] struct {
-	db *gorm.DB
+	db       *gorm.DB
+	validate *validator.Validate
 }
 
-func (r *crudRepository[T]) Create(et *T) (*T, error) {
-	v := validator.New()
-	if err := v.Struct(et); err != nil {
+func (r *crudRepository[T]) Create(ctx context.Context, et *T) (*T, error) {
+	if err := r.validate.Struct(et); err != nil {
 		return nil, err
 	}
-	err := r.db.Create(et).Error
+	err := r.db.WithContext(ctx).Create(et).Error
 	return et, err
 }
 
-func (r *crudRepository[T]) FindByID(id uuid.UUID) (*T, error) {
+func (r *crudRepository[T]) FindByID(ctx context.Context, id uuid.UUID) (*T, error) {
 	var et T
-	err := r.db.First(&et, id).Error
+	err := r.db.WithContext(ctx).First(&et, id).Error
 	return &et, err
 }
 
-func (r *crudRepository[T]) Update(et *T) (*T, error) {
-	v := validator.New()
-	if err := v.Struct(et); err != nil {
+func (r *crudRepository[T]) Update(ctx context.Context, et *T) (*T, error) {
+	if err := r.validate.Struct(et); err != nil {
 		return nil, err
 	}
-	err := r.db.Save(et).Error
+	err := r.db.WithContext(ctx).Save(et).Error
 	return et, err
 }
 
-func (r *crudRepository[T]) Delete(id uuid.UUID) error {
+func (r *crudRepository[T]) Delete(ctx context.Context, id uuid.UUID) error {
 	var et T
-	return r.db.Delete(&et, id).Error
+	return r.db.WithContext(ctx).Delete(&et, id).Error
 }
 
-func (r *crudRepository[T]) ListAll() ([]T, error) {
+func (r *crudRepository[T]) ListAll(ctx context.Context) ([]T, error) {
 	var entities []T
-	err := r.db.Find(&entities).Error
+	err := r.db.WithContext(ctx).Find(&entities).Error
 	return entities, err
 }
 
-func (r *crudRepository[T]) First(et *T) (*T, error) {
+func (r *crudRepository[T]) First(ctx context.Context, et *T) (*T, error) {
 	var existed T
-	err := r.db.Where(et).First(&existed).Error
+	err := r.db.WithContext(ctx).Where(et).First(&existed).Error
 	return &existed, err
 }
 
-func (r *crudRepository[T]) FindWithEntity(et *T) ([]T, error) {
+func (r *crudRepository[T]) FindWithEntity(ctx context.Context, et *T) ([]T, error) {
 	var entities []T
-	err := r.db.Where(et).Find(&entities).Error
+	err := r.db.WithContext(ctx).Where(et).Find(&entities).Error
 	return entities, err
 }
 
-func (r *crudRepository[T]) FindWithConditions(conditions map[string]any) ([]T, error) {
+func (r *crudRepository[T]) FindWithConditions(ctx context.Context, conditions map[string]any) ([]T, error) {
 	var entities []T
-	err := r.db.Where(conditions).Find(&entities).Error
+	err := r.db.WithContext(ctx).Where(conditions).Find(&entities).Error
 	return entities, err
 }
 
-func (r *crudRepository[T]) FindWithOrConditions(conditions map[string]any) ([]T, error) {
+func (r *crudRepository[T]) FindWithOrConditions(ctx context.Context, conditions map[string]any) ([]T, error) {
 	var entities []T
-	query := r.db.Model(new(T))
+	// Return an empty slice if no conditions are provided.
+	if len(conditions) == 0 {
+		return entities, nil
+	}
+	query := r.db.WithContext(ctx).Model(new(T))
 	for key, value := range conditions {
-		query.Or(fmt.Sprintf("%s = ?", key), value)
+		query = query.Or(fmt.Sprintf("%s = ?", key), value)
 	}
 	err := query.Find(&entities).Error
 	return entities, err
 }
 
-func (r *crudRepository[T]) CountWithConditions(conditions map[string]any) (int64, error) {
+func (r *crudRepository[T]) CountWithConditions(ctx context.Context, conditions map[string]any) (int64, error) {
 	var count int64
-	err := r.db.Model(new(T)).Where(conditions).Count(&count).Error
+	err := r.db.WithContext(ctx).Model(new(T)).Where(conditions).Count(&count).Error
 	return count, err
 }
 
-func (r *crudRepository[T]) CountWithEntity(et *T) (int64, error) {
+func (r *crudRepository[T]) CountWithEntity(ctx context.Context, et *T) (int64, error) {
 	var count int64
-	err := r.db.Model(new(T)).Where(et).Count(&count).Error
+	err := r.db.WithContext(ctx).Model(new(T)).Where(et).Count(&count).Error
 	return count, err
+}
+
+func (r *crudRepository[T]) Exists(ctx context.Context, conditions map[string]any) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(new(T)).Where(conditions).Count(&count).Error
+	return count > 0, err
 }
