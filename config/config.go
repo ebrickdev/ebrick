@@ -27,9 +27,16 @@ type ServerConfig struct {
 }
 
 // LoadConfig loads the configuration from the specified paths.
-func LoadConfig(configName string, configPaths []string, data any) error {
+func LoadConfig(configName string, configPaths []string, data any, defaults ...map[string]any) error {
 	viper.SetConfigName(configName)
 	viper.SetConfigType("yaml")
+
+	// Apply default values if provided
+	if len(defaults) > 0 {
+		for key, value := range defaults[0] {
+			viper.SetDefault(key, value)
+		}
+	}
 
 	for _, path := range configPaths {
 		viper.AddConfigPath(path)
@@ -56,19 +63,21 @@ func GetAppConfig() *Config {
 	return &cfg
 }
 
-func LoadConfigByKey(configName, key string, configPaths []string, data any, defaultValues map[string]any) error {
+func LoadConfigByKey(configName, key string, configPaths []string, data any, defaults ...map[string]any) error {
 	// Set configuration file details
 	viper.SetConfigName(configName)
 	viper.SetConfigType("yaml")
 
+	// Apply default values if provided
+	if len(defaults) > 0 {
+		for key, value := range defaults[0] {
+			viper.SetDefault(key, value)
+		}
+	}
+
 	// Set search paths for config files
 	for _, path := range configPaths {
 		viper.AddConfigPath(path)
-	}
-
-	// set default value
-	for k, v := range defaultValues {
-		viper.SetDefault(k, v)
 	}
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -77,7 +86,8 @@ func LoadConfigByKey(configName, key string, configPaths []string, data any, def
 
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	if err := viper.UnmarshalKey(key, data); err != nil {
+
+	if err := viper.Sub(key).Unmarshal(data); err != nil {
 		return fmt.Errorf("error unmarshal config: %v", err)
 	}
 	return nil
