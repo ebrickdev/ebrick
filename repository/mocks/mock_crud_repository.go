@@ -71,3 +71,9 @@ func (m *MockCrudRepository[T]) Exists(ctx context.Context, conditions map[strin
 	args := m.Called(ctx, conditions)
 	return args.Get(0).(bool), args.Error(1)
 }
+
+// Add mock for new paging method
+func (m *MockCrudRepository[T]) ListPaged(ctx context.Context, offset int, limit int) ([]T, error) {
+	args := m.Called(ctx, offset, limit)
+	return args.Get(0).([]T), args.Error(1)
+}
