@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 )
 
@@ -25,7 +26,7 @@ type CrudRepository[T any] interface {
 	CountWithEntity(ctx context.Context, et *T) (int64, error)
 	Exists(ctx context.Context, conditions map[string]any) (bool, error)
 	// Add paging method
-	ListPaged(ctx context.Context, offset int, limit int) ([]T, error)
+	ListPaged(ctx context.Context, offset int, limit int) ([]T, int64, error)
 }
 
 // NewCrudRepository creates a new CrudRepository instance for type T.
@@ -125,12 +126,33 @@ func (r *crudRepository[T]) Exists(ctx context.Context, conditions map[string]an
 	return count > 0, err
 }
 
-// ListPaged returns a subset of entities based on offset and limit.
-func (r *crudRepository[T]) ListPaged(ctx context.Context, offset int, limit int) ([]T, error) {
-	var entities []T
-	err := r.db.WithContext(ctx).
-		Offset(offset).
-		Limit(limit).
-		Find(&entities).Error
-	return entities, err
+// ListPaged returns a subset of entities based on offset and limit, along with the total count.
+func (r *crudRepository[T]) ListPaged(ctx context.Context, offset int, limit int) ([]T, int64, error) {
+	var (
+		entities []T
+		total    int64
+	)
+
+	g, ctx := errgroup.WithContext(ctx)
+
+	// Run count query concurrently.
+	g.Go(func() error {
+		return r.db.WithContext(ctx).Model(new(T)).Count(&total).Error
+	})
+
+	// Run paging query concurrently.
+	g.Go(func() error {
+		query := r.db.WithContext(ctx).Offset(offset)
+		// Apply the limit only if it's greater than zero.
+		if limit > 0 {
+			query = query.Limit(limit)
+		}
+		return query.Find(&entities).Error
+	})
+
+	if err := g.Wait(); err != nil {
+		return nil, total, err
+	}
+
+	return entities, total, nil
 }
