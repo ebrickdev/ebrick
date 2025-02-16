@@ -24,6 +24,8 @@ type CrudRepository[T any] interface {
 	CountWithConditions(ctx context.Context, conditions map[string]any) (int64, error)
 	CountWithEntity(ctx context.Context, et *T) (int64, error)
 	Exists(ctx context.Context, conditions map[string]any) (bool, error)
+	// Add paging method
+	ListPaged(ctx context.Context, offset int, limit int) ([]T, error)
 }
 
 // NewCrudRepository creates a new CrudRepository instance for type T.
@@ -121,4 +123,14 @@ func (r *crudRepository[T]) Exists(ctx context.Context, conditions map[string]an
 	var count int64
 	err := r.db.WithContext(ctx).Model(new(T)).Where(conditions).Count(&count).Error
 	return count > 0, err
+}
+
+// ListPaged returns a subset of entities based on offset and limit.
+func (r *crudRepository[T]) ListPaged(ctx context.Context, offset int, limit int) ([]T, error) {
+	var entities []T
+	err := r.db.WithContext(ctx).
+		Offset(offset).
+		Limit(limit).
+		Find(&entities).Error
+	return entities, err
 }
