@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 )
 
 // EventWithCtx couples an event with its associated context.
 type EventWithCtx struct {
 	ctx   context.Context
-	event Event
+	event cloudevents.Event
 }
 
 // subscriber represents a single event handler.
@@ -40,7 +42,7 @@ func generateUniqueID() string {
 }
 
 // Publish sends an event to all subscribers of the specified event type asynchronously.
-func (b *MemoryEventBus) Publish(ctx context.Context, topic string, event Event) error {
+func (b *MemoryEventBus) Publish(ctx context.Context, topic string, event cloudevents.Event) error {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
@@ -48,8 +50,8 @@ func (b *MemoryEventBus) Publish(ctx context.Context, topic string, event Event)
 		return errors.New("eventbus is closed")
 	}
 
-	if topic == "" || event.ID == "" {
-		return errors.New("event must have a valid ID and Topic")
+	if topic == "" {
+		return errors.New("event must have Topic")
 	}
 
 	if chans, exists := b.subscribers[topic]; exists {
@@ -67,7 +69,7 @@ func (b *MemoryEventBus) Publish(ctx context.Context, topic string, event Event)
 
 // Subscribe registers a handler for the specified event type.
 // It returns an error if the bus is closed.
-func (b *MemoryEventBus) Subscribe(topic string, handler func(ctx context.Context, event Event), opts ...SubscriptionOption) error {
+func (b *MemoryEventBus) Subscribe(topic string, handler func(ctx context.Context, event cloudevents.Event), opts ...SubscriptionOption) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
