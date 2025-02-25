@@ -40,7 +40,7 @@ func generateUniqueID() string {
 }
 
 // Publish sends an event to all subscribers of the specified event type asynchronously.
-func (b *MemoryEventBus) Publish(ctx context.Context, event Event) error {
+func (b *MemoryEventBus) Publish(ctx context.Context, topic string, event Event) error {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
@@ -48,11 +48,11 @@ func (b *MemoryEventBus) Publish(ctx context.Context, event Event) error {
 		return errors.New("eventbus is closed")
 	}
 
-	if event.Type == "" || event.ID == "" {
-		return errors.New("event must have a valid ID and Type")
+	if topic == "" || event.ID == "" {
+		return errors.New("event must have a valid ID and Topic")
 	}
 
-	if chans, exists := b.subscribers[event.Type]; exists {
+	if chans, exists := b.subscribers[topic]; exists {
 		for _, sub := range chans {
 			go func(c chan EventWithCtx) {
 				select {
@@ -67,7 +67,7 @@ func (b *MemoryEventBus) Publish(ctx context.Context, event Event) error {
 
 // Subscribe registers a handler for the specified event type.
 // It returns an error if the bus is closed.
-func (b *MemoryEventBus) Subscribe(eventType string, handler func(ctx context.Context, event Event)) error {
+func (b *MemoryEventBus) Subscribe(topic string, handler func(ctx context.Context, event Event), opts ...SubscriptionOption) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -75,10 +75,15 @@ func (b *MemoryEventBus) Subscribe(eventType string, handler func(ctx context.Co
 		return errors.New("eventbus is closed")
 	}
 
+	options := &SubscriptionOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	ch := make(chan EventWithCtx, 10) // Buffered channel to prevent blocking
 	id := generateUniqueID()
 	sub := subscriber{id: id, channel: ch}
-	b.subscribers[eventType] = append(b.subscribers[eventType], sub)
+	b.subscribers[topic] = append(b.subscribers[topic], sub)
 
 	go func() {
 		for e := range ch {
