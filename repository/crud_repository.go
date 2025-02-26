@@ -16,6 +16,7 @@ type CrudRepository[T any] interface {
 	Create(ctx context.Context, et *T) (*T, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*T, error)
 	Update(ctx context.Context, et *T) (*T, error)
+	Patch(ctx context.Context, et *T) (*T, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	ListAll(ctx context.Context) ([]T, error)
 	First(ctx context.Context, et *T) (*T, error)
@@ -62,6 +63,22 @@ func (r *crudRepository[T]) Update(ctx context.Context, et *T) (*T, error) {
 		return nil, err
 	}
 	err := r.db.WithContext(ctx).Save(et).Error
+	return et, err
+}
+
+func (r *crudRepository[T]) Patch(ctx context.Context, et *T) (*T, error) {
+	var updated T
+	err := r.db.WithContext(ctx).Model(et).Updates(et).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// Reload the updated entity from the DB.
+	err = r.db.WithContext(ctx).Model(et).First(&updated).Error
+	if err != nil {
+		return nil, err
+	}
+
 	return et, err
 }
 

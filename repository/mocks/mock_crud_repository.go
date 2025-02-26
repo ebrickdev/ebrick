@@ -77,3 +77,8 @@ func (m *MockCrudRepository[T]) ListPaged(ctx context.Context, offset int, limit
 	args := m.Called(ctx, offset, limit)
 	return args.Get(0).([]T), args.Get(1).(int64), args.Error(2)
 }
+
+func (m *MockCrudRepository[T]) Patch(ctx context.Context, entity *T) (*T, error) {
+	args := m.Called(ctx, entity)
+	return args.Get(0).(*T), args.Error(1)
+}
